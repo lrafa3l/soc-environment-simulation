@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  # ── Production build (nginx, port 8080) ──────────────────────────────────
+  soc-sim:
+    build:
+      context: .
+      target: production
+    image: soc-environment-simulation:latest
+    container_name: soc-sim
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── Dev server with hot-reload (port 5173) ───────────────────────────────
+  soc-sim-dev:
+    build:
+      context: .
+      target: builder
+    image: soc-environment-simulation:dev
+    container_name: soc-sim-dev
+    command: npm run dev
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount source for hot-reload; node_modules stays in the container
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    profiles:
+      - dev  # only starts with: docker compose --profile dev up
